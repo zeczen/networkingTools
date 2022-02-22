@@ -1,9 +1,10 @@
 import ipaddress
 import subprocess
+import sys
 from datetime import datetime
-from multiprocessing import Process
 from random import randint
 from struct import unpack
+from threading import Thread
 from time import sleep
 
 from scapy.arch import get_if_addr
@@ -57,7 +58,6 @@ def received_arp(packet):
 
     if host in hosts:
         return  # we found him already
-
     # else
 
     hosts.append(host)
@@ -75,7 +75,6 @@ def listen_arp():
     """
     sniff(
         lfilter=lambda packet: ARP in packet and packet[ARP].op == 2,
-        # prn=lambda p: threading.Thread(target=received_arp, args=(p,)).start(),
         prn=received_arp,
     )
 
@@ -141,23 +140,22 @@ def ip_scanning(network_specification):
     arp_packet[ARP].psrc = random_ip(network)
     # we send packets with a random ip
 
-    t = Process(target=listen_arp)
-    t.start()  # run the sniffer
+    t = Thread(target=listen_arp)
+    t.daemon = True  # stop the thread when program exits
+
+    t.start()  # run the sniff before sending the pings
 
     header_generator = write_header(network)
     next(header_generator)
-
-    sleep(2)
-    # give time for the sniff to start before sending the pings
 
     send_arp(network)  # send the arp request while sniffing
 
     next(header_generator)
 
-    sleep(0.1)
-    # give time for all the last packet to arrive before killing the thread
+    sleep(.5)
+    # give time for all the last packet to arrive before killing the program
 
-    t.terminate()  # stop sniffing
+    sys.exit()  # stop sniffing
 
 
 def get_network_specification():
