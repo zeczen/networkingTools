@@ -170,7 +170,7 @@ def get_network_specification():
     try:
         # for linux
         with subprocess.Popen('ifconfig', stdout=subprocess.PIPE) as proc:
-            for _ in range(30):
+            while True:
                 line = proc.stdout.readline()
                 if ip.encode() in line:
                     mask = list(filter(lambda x: x != b'',
@@ -182,7 +182,7 @@ def get_network_specification():
     except FileNotFoundError:
         # for windows
         with subprocess.Popen('ipconfig', stdout=subprocess.PIPE) as proc:
-            for _ in range(30):
+            while True:
                 line = proc.stdout.readline()
                 if ip.encode() in line:
                     break
